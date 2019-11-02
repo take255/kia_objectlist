@@ -40,48 +40,22 @@ imp.reload(cmd)
 
 
 bl_info = {
-"name": "kiamodifierlist",
+"name": "kiaobjectlist",
 "author": "kisekiakeshi",
 "version": (0, 1),
 "blender": (2, 80, 0),
-"description": "kiamodifierlist",
+"description": "kiaobjectlist",
 "category": "Object"}
 
 
 
 try: 
-    bpy.utils.unregister_class(KIAMODIFIERLIST_Props_item)
+    bpy.utils.unregister_class(KIAOBJECTLIST_Props_item)
 except:
     pass
 
 
-@persistent
-def kiamodifierlist_handler(scene):
-    props = bpy.context.scene.kiamodifierlist_props
-    ui_list = bpy.context.window_manager.kiamodifierlist_list
-    act = utils.getActiveObj()
-
-    if props.handler_through:
-        return
-
-    if act == None:
-        return 
-
-    mod_count = len(act.modifiers)
-    
-    #選択が変わったときにリロード
-    #モディファイヤの数を保持しておく。モディファイヤ数が変わったらリロード
-    if props.currentobj != act.name:
-        cmd.reload()
-        props.currentobj = act.name
-        props.mod_count = mod_count
-    else:
-        if props.mod_count != mod_count:
-            cmd.reload()
-            props.mod_count = len(act.modifiers)
-
-
-class KIAMODIFIERLIST_Props_OA(PropertyGroup):
+class KIAOBJECTLIST_Props_OA(PropertyGroup):
     handler_through : BoolProperty(default = False)
     currentobj : StringProperty(maxlen=63)
     mod_count : IntProperty()
@@ -90,7 +64,7 @@ class KIAMODIFIERLIST_Props_OA(PropertyGroup):
 #---------------------------------------------------------------------------------------
 #リスト内のアイテムの見た目を指定
 #---------------------------------------------------------------------------------------
-class KIAMODIFIERLIST_UL_uilist(UIList):
+class KIAOBJECTLIST_UL_uilist(UIList):
     
     def draw_item(self, context, layout, data, item, icon, active_data, active_propname, index):
         if self.layout_type in {'DEFAULT', 'COMPACT'}:
@@ -108,7 +82,7 @@ class KIAMODIFIERLIST_UL_uilist(UIList):
 #リスト名 , list_id can be ””　，item_ptr ,item , index_pointer ,active_index
 #active_indexをui_list.active_indexで取得できる
 #---------------------------------------------------------------------------------------
-class KIAMODIFIERLIST_PT_ui(utils.panel):
+class KIAOBJECTLIST_PT_ui(utils.panel):
     bl_label = "kia_modifierlist"
 
     def invoke(self, context, event):
@@ -119,18 +93,26 @@ class KIAMODIFIERLIST_PT_ui(utils.panel):
         row = layout.row()
 
         col = row.column()
-        ui_list = context.window_manager.kiamodifierlist_list
+        ui_list = context.window_manager.kiaobjectlist_list
 
-        col.template_list("KIAMODIFIERLIST_UL_uilist", "", ui_list, "itemlist", ui_list, "active_index", rows=8)
+        col.template_list("kiaobjectlist_UL_uilist", "", ui_list, "itemlist", ui_list, "active_index", rows=8)
         col = row.column(align=True)
 
-        col.operator("kiamodifierlist.modifierlist_apply", icon='MODIFIER_ON')
-        col.operator("kiamodifierlist.modifierlist_apply_checked", icon='CHECKBOX_HLT')
-        col.operator("kiamodifierlist.modifierlist_remove", icon='TRASH')
-        col.operator("kiamodifierlist.modifierlist_move_item", icon=utils.icon['UP']).dir = 'TOP'
-        col.operator("kiamodifierlist.modifierlist_move_item", icon='TRIA_UP').dir = 'UP'
-        col.operator("kiamodifierlist.modifierlist_move_item", icon='TRIA_DOWN').dir = 'DOWN'
-        col.operator("kiamodifierlist.modifierlist_move_item", icon=utils.icon['DOWN']).dir = 'BOTTOM'
+        col.operator("kiaobjectlist.select_all", icon='PROP_CON')
+        col.operator("kiaobjectlist.add", icon=utils.icon['ADD'])
+        col.operator("kiaobjectlist.remove", icon=utils.icon['REMOVE'])
+        col.operator("kiaobjectlist.move_item", icon=utils.icon['UP']).dir = 'UP'
+        col.operator("kiaobjectlist.move_item", icon=utils.icon['DOWN']).dir = 'DOWN'
+        col.operator("kiaobjectlist.clear", icon=utils.icon['CANCEL'])
+        col.operator("kiaobjectlist.remove_not_exist", icon='EROOR')
+
+        # col.operator("objectlist.selectall_item", icon='PROP_CON', text="")        
+        # col.operator("objectlist.add_item", icon=Utils.icon['ADD'], text="")
+        # col.operator("objectlist.remove_item", icon=Utils.icon['REMOVE'], text="")
+        # col.operator("objectlist.move_item", icon=Utils.icon['UP'], text="").type = 'UP'
+        # col.operator("objectlist.move_item", icon=Utils.icon['DOWN'], text="").type = 'DOWN'
+        # col.operator("objectlist.clear_item", icon=Utils.icon['CANCEL'] , text="")
+        # col.operator("objectlist.remove_notexist_item", icon='ERROR' , text="")
 
 
 #---------------------------------------------------------------------------------------
@@ -139,11 +121,11 @@ class KIAMODIFIERLIST_PT_ui(utils.panel):
 #TestCollectionPropertyのitemListの型として指定する必要があるので後でレジストできない
 #---------------------------------------------------------------------------------------
 
-class KIAMODIFIERLIST_Props_item(PropertyGroup):
+class KIAOBJECTLIST_Props_item(PropertyGroup):
     name : StringProperty(get=cmd.get_item, set=cmd.set_item)
     bool_val : BoolProperty( update = cmd.showhide )
 
-bpy.utils.register_class(KIAMODIFIERLIST_Props_item)
+bpy.utils.register_class(KIAOBJECTLIST_Props_item)
 
 
 #---------------------------------------------------------------------------------------
@@ -159,15 +141,48 @@ bpy.utils.register_class(KIAMODIFIERLIST_Props_item)
 # item.name = bone.name
 # item.int_val = 10
 #---------------------------------------------------------------------------------------
-class KIAMODIFIERLIST_Props_list(PropertyGroup):
+class KIAOBJECTLIST_Props_list(PropertyGroup):
     active_index : IntProperty()
-    itemlist : CollectionProperty(type=KIAMODIFIERLIST_Props_item)#アイテムプロパティの型を収めることができるリストを生成
+    itemlist : CollectionProperty(type=KIAOBJECTLIST_Props_item)#アイテムプロパティの型を収めることができるリストを生成
 
 
 
-class KIAMODIFIERLIST_OT_move_item(Operator):
+class KIAOBJECTLIST_OT_select_all(Operator):
+    """全選択"""
+    bl_idname = "kiaobjectlist.select_all"
+    bl_label = ""
+    def execute(self, context):
+        cmd.select_all()
+        return {'FINISHED'}
+
+class KIAOBJECTLIST_OT_add(Operator):
+    """全選択"""
+    bl_idname = "kiaobjectlist.add"
+    bl_label = ""
+    def execute(self, context):
+        cmd.add()
+        return {'FINISHED'}
+
+class KIAOBJECTLIST_OT_remove(Operator):
+    """選択されたものを削除"""
+    bl_idname = "kiaobjectlist.remove"
+    bl_label = ""
+
+    def execute(self, context):
+        cmd.remove()
+        return {'FINISHED'}
+
+class KIAOBJECTLIST_OT_remove_not_exist(Operator):
+    """存在していないものを削除"""
+    bl_idname = "kiaobjectlist.remove_not_exist"
+    bl_label = ""
+    def execute(self, context):
+        cmd.remove_not_exist()
+        return {'FINISHED'}
+
+class KIAOBJECTLIST_OT_move_item(Operator):
     """アイテムの移動"""
-    bl_idname = "kiamodifierlist.modifierlist_move_item"
+    bl_idname = "kiaobjectlist.move_item"
     bl_label = ""
     dir : StringProperty(default='UP')
 
@@ -175,53 +190,58 @@ class KIAMODIFIERLIST_OT_move_item(Operator):
         cmd.move(self.dir)
         return {'FINISHED'}
 
-class KIAMODIFIERLIST_OT_apply(Operator):
-    """選択をapply"""
-    bl_idname = "kiamodifierlist.modifierlist_apply"
+class KIAOBJECTLIST_OT_clear(Operator):
+    """アイテムの移動"""
+    bl_idname = "kiaobjectlist.clear"
     bl_label = ""
+    dir : StringProperty(default='UP')
 
     def execute(self, context):
-        cmd.apply()
+        cmd.clear()
         return {'FINISHED'}
 
-class KIAMODIFIERLIST_OT_apply_checked(Operator):
-    """チェックされたものをapply"""
-    bl_idname = "kiamodifierlist.modifierlist_apply_checked"
-    bl_label = ""
+# class KIAOBJECTLIST_OT_apply(Operator):
+#     """選択をapply"""
+#     bl_idname = "kiaobjectlist.apply"
+#     bl_label = ""
 
-    def execute(self, context):
-        cmd.apply_checked()
-        return {'FINISHED'}
+#     def execute(self, context):
+#         cmd.apply()
+#         return {'FINISHED'}
 
-class KIAMODIFIERLIST_OT_remove(Operator):
-    """選択されたものを削除"""
-    bl_idname = "kiamodifierlist.modifierlist_remove"
-    bl_label = ""
+# class KIAOBJECTLIST_OT_apply_checked(Operator):
+#     """チェックされたものをapply"""
+#     bl_idname = "kiaobjectlist.apply_checked"
+#     bl_label = ""
 
-    def execute(self, context):
-        cmd.remove()
-        return {'FINISHED'}
+#     def execute(self, context):
+#         cmd.apply_checked()
+#         return {'FINISHED'}
+
 
 
 classes = (
-    KIAMODIFIERLIST_Props_OA,
-    KIAMODIFIERLIST_PT_ui,
+    KIAOBJECTLIST_Props_OA,
+    KIAOBJECTLIST_UL_uilist,
+    KIAOBJECTLIST_PT_ui,
+    KIAOBJECTLIST_Props_list,    
 
-    KIAMODIFIERLIST_Props_list,
-    KIAMODIFIERLIST_UL_uilist,
-    KIAMODIFIERLIST_OT_move_item,
-    KIAMODIFIERLIST_OT_apply,
-    KIAMODIFIERLIST_OT_apply_checked,
-    KIAMODIFIERLIST_OT_remove
+
+    KIAOBJECTLIST_OT_select_all,
+    KIAOBJECTLIST_OT_add,
+    KIAOBJECTLIST_OT_remove,
+    KIAOBJECTLIST_OT_remove_not_exist,
+    KIAOBJECTLIST_OT_move_item,
+    KIAOBJECTLIST_OT_clear
+
 )
 
 def register():
     for cls in classes:
         bpy.utils.register_class(cls)
 
-    bpy.types.Scene.kiamodifierlist_props = PointerProperty(type=KIAMODIFIERLIST_Props_OA)
-    bpy.types.WindowManager.kiamodifierlist_list = PointerProperty(type=KIAMODIFIERLIST_Props_list)
-    bpy.app.handlers.depsgraph_update_pre.append(kiamodifierlist_handler)
+    bpy.types.Scene.kiaobjectlist_props = PointerProperty(type=KIAOBJECTLIST_Props_OA)
+    bpy.types.WindowManager.kiaobjectlist_list = PointerProperty(type=KIAOBJECTLIST_Props_list)
 
 
 
@@ -230,7 +250,6 @@ def unregister():
     for cls in classes:
         bpy.utils.unregister_class(cls)
 
-    del bpy.types.Scene.kiamodifierlist_props
-    del bpy.types.WindowManager.kiamodifierlist_list
-    bpy.app.handlers.depsgraph_update_pre.remove(kiamodifierlist_handler)
+    del bpy.types.Scene.kiaobjectlist_props
+    del bpy.types.WindowManager.kiaobjectlist_list
 
