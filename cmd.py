@@ -88,7 +88,7 @@ def select_all():
 
 
 def add():
-    ui_list = bpy.context.window_manager.kiamodifierlist_list
+    ui_list = bpy.context.window_manager.kiaobjectlist_list
     itemlist = ui_list.itemlist
 
     for ob in utils.selected():
@@ -98,12 +98,15 @@ def add():
 
 
 def remove():
-    if len(self.itemlist):
-        self.itemlist.remove(self.active_index)
-        if len(self.itemlist)-1 < self.active_index:
-            self.active_index = len(self.itemlist)-1
-            if self.active_index < 0:
-                self.active_index = 0
+    ui_list = bpy.context.window_manager.kiaobjectlist_list
+    itemlist = ui_list.itemlist
+
+    if len(itemlist):
+        itemlist.remove(ui_list.active_index)
+        if len(itemlist)-1 < ui_list.active_index:
+            ui_list.active_index = len(itemlist)-1
+            if ui_list.active_index < 0:
+                ui_list.active_index = 0
 
 
 def remove_not_exist():
