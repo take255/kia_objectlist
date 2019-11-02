@@ -86,7 +86,7 @@ class KIAOBJECTLIST_PT_ui(utils.panel):
     bl_label = "kia_modifierlist"
 
     def invoke(self, context, event):
-        return context.window_manager.invoke_props_dialog(self , width=400)
+        return context.window_manager.invoke_props_dialog(self)
 
     def draw(self, context):
         layout=self.layout
@@ -95,7 +95,7 @@ class KIAOBJECTLIST_PT_ui(utils.panel):
         col = row.column()
         ui_list = context.window_manager.kiaobjectlist_list
 
-        col.template_list("kiaobjectlist_UL_uilist", "", ui_list, "itemlist", ui_list, "active_index", rows=8)
+        col.template_list("KIAOBJECTLIST_UL_uilist", "", ui_list, "itemlist", ui_list, "active_index", rows=8)
         col = row.column(align=True)
 
         col.operator("kiaobjectlist.select_all", icon='PROP_CON')
@@ -104,7 +104,7 @@ class KIAOBJECTLIST_PT_ui(utils.panel):
         col.operator("kiaobjectlist.move_item", icon=utils.icon['UP']).dir = 'UP'
         col.operator("kiaobjectlist.move_item", icon=utils.icon['DOWN']).dir = 'DOWN'
         col.operator("kiaobjectlist.clear", icon=utils.icon['CANCEL'])
-        col.operator("kiaobjectlist.remove_not_exist", icon='EROOR')
+        col.operator("kiaobjectlist.remove_not_exist", icon='ERROR')
 
         # col.operator("objectlist.selectall_item", icon='PROP_CON', text="")        
         # col.operator("objectlist.add_item", icon=Utils.icon['ADD'], text="")
@@ -145,8 +145,6 @@ class KIAOBJECTLIST_Props_list(PropertyGroup):
     active_index : IntProperty()
     itemlist : CollectionProperty(type=KIAOBJECTLIST_Props_item)#アイテムプロパティの型を収めることができるリストを生成
 
-
-
 class KIAOBJECTLIST_OT_select_all(Operator):
     """全選択"""
     bl_idname = "kiaobjectlist.select_all"
@@ -156,7 +154,7 @@ class KIAOBJECTLIST_OT_select_all(Operator):
         return {'FINISHED'}
 
 class KIAOBJECTLIST_OT_add(Operator):
-    """全選択"""
+    """選択を追加"""
     bl_idname = "kiaobjectlist.add"
     bl_label = ""
     def execute(self, context):
@@ -164,7 +162,7 @@ class KIAOBJECTLIST_OT_add(Operator):
         return {'FINISHED'}
 
 class KIAOBJECTLIST_OT_remove(Operator):
-    """選択されたものを削除"""
+    """選択を削除"""
     bl_idname = "kiaobjectlist.remove"
     bl_label = ""
 

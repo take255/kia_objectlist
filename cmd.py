@@ -88,10 +88,13 @@ def select_all():
 
 
 def add():
-    for obj in bpy.context.selected_objects:
-        item = self.itemlist.add()
-        item.name = obj.name
-        self.active_index = len(self.itemlist)-1
+    ui_list = bpy.context.window_manager.kiamodifierlist_list
+    itemlist = ui_list.itemlist
+
+    for ob in utils.selected():
+        item = itemlist.add()
+        item.name = ob.name
+        ui_list.active_index = len(itemlist) - 1
 
 
 def remove():
@@ -120,8 +123,36 @@ def remove_not_exist():
         item.name = nodename
         self.active_index = len(self.itemlist)-1
 
-def move(self.dir):
+def move(dir):
+    ui_list = bpy.context.window_manager.kiamodifierlist_list
+    itemlist = ui_list.itemlist
+    index = ui_list.active_index
 
+    if len(itemlist) < 2:
+        return
+
+    if type == 'UP':
+        v = index -1
+    elif type == 'DOWN':
+        v = index + 1
+    elif type == 'TOP':
+        v = 0
+    elif type == 'BOTTOM':
+        v = len(itemlist) - 1
+
+
+    itemlist.move(index, v)
+    ui_list.active_index = v
+
+    ob =utils.getActiveObj()
+
+    for order_list,listitem in enumerate(itemlist):
+        for order,mod in enumerate(ob.modifiers):
+            
+            if mod.name == listitem.name:
+                if (order_list < order):
+                    for i in range(order - order_list):
+                        bpy.ops.object.modifier_move_up(modifier = mod.name )
 
 def clear():
     ui_list = bpy.context.window_manager.kiamodifierlist_list
