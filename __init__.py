@@ -55,10 +55,26 @@ except:
     pass
 
 
+#リストでアイテムを選択したときオブジェクトを選択する
+@persistent
+def kiaobjectlist_handler(scene):
+    ui_list = bpy.context.window_manager.kiaobjectlist_list
+    itemlist = ui_list.itemlist
+    props = bpy.context.scene.kiaobjectlist_props
+
+    #インデックスが変わったときだけ選択
+    if len(itemlist) > 0:
+        index = ui_list.active_index
+        if props.currentindex != index:
+            props.currentindex = index#先に実行しておかないとdeselectでhandlerがループしてしまう
+            bpy.ops.object.select_all(action='DESELECT')
+            utils.selectByName(itemlist[index].name,True)
+
 class KIAOBJECTLIST_Props_OA(PropertyGroup):
-    handler_through : BoolProperty(default = False)
-    currentobj : StringProperty(maxlen=63)
-    mod_count : IntProperty()
+    #handler_through : BoolProperty(default = False)
+    #currentobj : StringProperty(maxlen=63)
+    #mod_count : IntProperty()
+    currentindex : IntProperty()
 
 
 #---------------------------------------------------------------------------------------
@@ -83,7 +99,7 @@ class KIAOBJECTLIST_UL_uilist(UIList):
 #active_indexをui_list.active_indexで取得できる
 #---------------------------------------------------------------------------------------
 class KIAOBJECTLIST_PT_ui(utils.panel):
-    bl_label = "kia_modifierlist"
+    bl_label = "kia_objectlist"
 
     def invoke(self, context, event):
         return context.window_manager.invoke_props_dialog(self)
@@ -113,6 +129,16 @@ class KIAOBJECTLIST_PT_ui(utils.panel):
         # col.operator("objectlist.move_item", icon=Utils.icon['DOWN'], text="").type = 'DOWN'
         # col.operator("objectlist.clear_item", icon=Utils.icon['CANCEL'] , text="")
         # col.operator("objectlist.remove_notexist_item", icon='ERROR' , text="")
+
+        row = layout.row(align=True)
+        row.label( text = 'check' )
+        for x in ('show' , 'hide' , 'select' , 'selected'):
+            row.operator("kiaobjectlist.check_item", text = x ).op = x
+        # row.operator("kiaobjectlist.check_hide", text="hide")
+        # row.operator("kiaobjectlist.check_select",  text="sel")
+
+        #row = layout.row(align=True)
+        #row.operator("objectlist.check_selected", text="selected")
 
 
 #---------------------------------------------------------------------------------------
@@ -189,14 +215,24 @@ class KIAOBJECTLIST_OT_move_item(Operator):
         return {'FINISHED'}
 
 class KIAOBJECTLIST_OT_clear(Operator):
-    """アイテムの移動"""
+    """アイテムのクリア"""
     bl_idname = "kiaobjectlist.clear"
     bl_label = ""
-    dir : StringProperty(default='UP')
-
     def execute(self, context):
         cmd.clear()
         return {'FINISHED'}
+
+
+class KIAOBJECTLIST_OT_check_item(Operator):
+    """アイテムの移動"""
+    bl_idname = "kiaobjectlist.check_item"
+    bl_label = ""
+    op : StringProperty()
+
+    def execute(self, context):
+        cmd.check_item(self.op)
+        return {'FINISHED'}
+
 
 # class KIAOBJECTLIST_OT_apply(Operator):
 #     """選択をapply"""
@@ -230,7 +266,9 @@ classes = (
     KIAOBJECTLIST_OT_remove,
     KIAOBJECTLIST_OT_remove_not_exist,
     KIAOBJECTLIST_OT_move_item,
-    KIAOBJECTLIST_OT_clear
+    KIAOBJECTLIST_OT_clear,
+
+    KIAOBJECTLIST_OT_check_item
 
 )
 
@@ -240,6 +278,7 @@ def register():
 
     bpy.types.Scene.kiaobjectlist_props = PointerProperty(type=KIAOBJECTLIST_Props_OA)
     bpy.types.WindowManager.kiaobjectlist_list = PointerProperty(type=KIAOBJECTLIST_Props_list)
+    bpy.app.handlers.depsgraph_update_pre.append(kiaobjectlist_handler)
 
 
 
@@ -250,4 +289,5 @@ def unregister():
 
     del bpy.types.Scene.kiaobjectlist_props
     del bpy.types.WindowManager.kiaobjectlist_list
+    bpy.app.handlers.depsgraph_update_pre.remove(kiaobjectlist_handler)
 
