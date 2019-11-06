@@ -48,12 +48,10 @@ bl_info = {
 "category": "Object"}
 
 
-
 try: 
     bpy.utils.unregister_class(KIAOBJECTLIST_Props_item)
 except:
     pass
-
 
 #リストでアイテムを選択したときオブジェクトを選択する
 @persistent
@@ -71,11 +69,7 @@ def kiaobjectlist_handler(scene):
             utils.selectByName(itemlist[index].name,True)
 
 class KIAOBJECTLIST_Props_OA(PropertyGroup):
-    #handler_through : BoolProperty(default = False)
-    #currentobj : StringProperty(maxlen=63)
-    #mod_count : IntProperty()
     currentindex : IntProperty()
-
 
 #---------------------------------------------------------------------------------------
 #リスト内のアイテムの見た目を指定
@@ -121,24 +115,10 @@ class KIAOBJECTLIST_PT_ui(utils.panel):
         col.operator("kiaobjectlist.move_item", icon=utils.icon['DOWN']).dir = 'DOWN'
         col.operator("kiaobjectlist.clear", icon=utils.icon['CANCEL'])
         col.operator("kiaobjectlist.remove_not_exist", icon='ERROR')
-
-        # col.operator("objectlist.selectall_item", icon='PROP_CON', text="")        
-        # col.operator("objectlist.add_item", icon=Utils.icon['ADD'], text="")
-        # col.operator("objectlist.remove_item", icon=Utils.icon['REMOVE'], text="")
-        # col.operator("objectlist.move_item", icon=Utils.icon['UP'], text="").type = 'UP'
-        # col.operator("objectlist.move_item", icon=Utils.icon['DOWN'], text="").type = 'DOWN'
-        # col.operator("objectlist.clear_item", icon=Utils.icon['CANCEL'] , text="")
-        # col.operator("objectlist.remove_notexist_item", icon='ERROR' , text="")
-
         row = layout.row(align=True)
         row.label( text = 'check' )
         for x in ('show' , 'hide' , 'select' , 'selected'):
             row.operator("kiaobjectlist.check_item", text = x ).op = x
-        # row.operator("kiaobjectlist.check_hide", text="hide")
-        # row.operator("kiaobjectlist.check_select",  text="sel")
-
-        #row = layout.row(align=True)
-        #row.operator("objectlist.check_selected", text="selected")
 
 
 #---------------------------------------------------------------------------------------
@@ -232,27 +212,6 @@ class KIAOBJECTLIST_OT_check_item(Operator):
     def execute(self, context):
         cmd.check_item(self.op)
         return {'FINISHED'}
-
-
-# class KIAOBJECTLIST_OT_apply(Operator):
-#     """選択をapply"""
-#     bl_idname = "kiaobjectlist.apply"
-#     bl_label = ""
-
-#     def execute(self, context):
-#         cmd.apply()
-#         return {'FINISHED'}
-
-# class KIAOBJECTLIST_OT_apply_checked(Operator):
-#     """チェックされたものをapply"""
-#     bl_idname = "kiaobjectlist.apply_checked"
-#     bl_label = ""
-
-#     def execute(self, context):
-#         cmd.apply_checked()
-#         return {'FINISHED'}
-
-
 
 classes = (
     KIAOBJECTLIST_Props_OA,
