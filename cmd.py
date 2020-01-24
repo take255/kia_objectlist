@@ -91,14 +91,24 @@ def select_all():
         #bpy.data.objects[node.name].select = True
 
 
+#オブジェクトモードかエディットモードかを
 def add():
     ui_list = bpy.context.window_manager.kiaobjectlist_list
     itemlist = ui_list.itemlist
 
-    for ob in utils.selected():
-        item = itemlist.add()
-        item.name = ob.name
-        ui_list.active_index = len(itemlist) - 1
+    mode = utils.current_mode()
+    if mode == 'OBJECT':
+        for ob in utils.selected():
+            item = itemlist.add()
+            item.name = ob.name
+            ui_list.active_index = len(itemlist) - 1
+
+    elif mode == 'EDIT':
+        for bone in utils.get_selected_bones():
+            item = itemlist.add()
+            item.name = bone.name
+            ui_list.active_index = len(itemlist) - 1
+
 
 
 def remove():

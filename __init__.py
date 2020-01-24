@@ -65,8 +65,19 @@ def kiaobjectlist_handler(scene):
         index = ui_list.active_index
         if props.currentindex != index:
             props.currentindex = index#先に実行しておかないとdeselectでhandlerがループしてしまう
-            bpy.ops.object.select_all(action='DESELECT')
-            utils.selectByName(itemlist[index].name,True)
+
+            mode = utils.current_mode()
+            if mode == 'OBJECT':
+                bpy.ops.object.select_all(action='DESELECT')
+                utils.selectByName(itemlist[index].name,True)
+
+            if mode == 'EDIT':
+                bpy.ops.armature.select_all(action='DESELECT')
+                utils.bone.selectByName(itemlist[index].name,True)
+
+                #bpy.ops.object.select_all(action='DESELECT')
+                #utils.selectByName(itemlist[index].name,True)
+
 
 class KIAOBJECTLIST_Props_OA(PropertyGroup):
     currentindex : IntProperty()
