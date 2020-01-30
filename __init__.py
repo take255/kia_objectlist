@@ -126,11 +126,17 @@ class KIAOBJECTLIST_PT_ui(utils.panel):
         col.operator("kiaobjectlist.move_item", icon=utils.icon['DOWN']).dir = 'DOWN'
         col.operator("kiaobjectlist.clear", icon=utils.icon['CANCEL'])
         col.operator("kiaobjectlist.remove_not_exist", icon='ERROR')
+
         row = layout.row(align=True)
         row.label( text = 'check' )
         for x in ('show' , 'hide' , 'select' , 'selected'):
             row.operator("kiaobjectlist.check_item", text = x ).op = x
 
+        row = layout.row(align=True)
+        row.label( text = 'check' )
+        row.operator("kiaobjectlist.reorder")
+        
+        
 
 #---------------------------------------------------------------------------------------
 #リストのアイテムに他の情報を埋め込みたい場合はプロパティを追加できるのでいろいろ追加してみよう。
@@ -224,6 +230,18 @@ class KIAOBJECTLIST_OT_check_item(Operator):
         cmd.check_item(self.op)
         return {'FINISHED'}
 
+
+#アイテムのオーダーをリストの通りにする。
+class KIAOBJECTLIST_OT_reorder(Operator):
+    """アイテムのクリア"""
+    bl_idname = "kiaobjectlist.reorder"
+    bl_label = "reorder"
+    def execute(self, context):
+        cmd.reorder()
+        return {'FINISHED'}
+
+
+
 classes = (
     KIAOBJECTLIST_Props_OA,
     KIAOBJECTLIST_UL_uilist,
@@ -238,7 +256,9 @@ classes = (
     KIAOBJECTLIST_OT_move_item,
     KIAOBJECTLIST_OT_clear,
 
-    KIAOBJECTLIST_OT_check_item
+    KIAOBJECTLIST_OT_check_item,
+
+    KIAOBJECTLIST_OT_reorder
 
 )
 

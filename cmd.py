@@ -110,7 +110,6 @@ def add():
             ui_list.active_index = len(itemlist) - 1
 
 
-
 def remove():
     ui_list = bpy.context.window_manager.kiaobjectlist_list
     itemlist = ui_list.itemlist
@@ -180,7 +179,10 @@ def check_item(op):
 
     obset = set([ob.name for ob in bpy.context.selected_objects])
     if op == 'select':
-        bpy.ops.object.select_all(action='DESELECT')
+        if utils.current_mode() == 'OBJECT':
+            bpy.ops.object.select_all(action='DESELECT')
+        if utils.current_mode() == 'EDIT':
+            bpy.ops.armature.select_all(action='DESELECT')
 
     for node in itemlist:
         if op == 'selected':
@@ -191,7 +193,12 @@ def check_item(op):
 
         elif op == 'select':
             if node.bool_val == True:
-                utils.selectByName(node.name,True)
+                #オブジェクトモードなら
+                if utils.current_mode() == 'OBJECT':
+                    utils.selectByName(node.name,True)
+
+                if utils.current_mode() == 'EDIT':
+                    utils.bone.selectByName(node.name,True)
 
         elif op == 'show':
             if node.bool_val == True:
@@ -200,4 +207,122 @@ def check_item(op):
         elif op == 'hide':
             if node.bool_val == True:
                 utils.showhide(node,True)
- 
+
+BoneCount = 0
+#---------------------------------------------------------------------------------------
+ #オブジェクトの並び替え
+#---------------------------------------------------------------------------------------
+def reorder():
+    global BoneCount
+    ui_list = bpy.context.window_manager.kiaobjectlist_list
+    itemlist = ui_list.itemlist    
+
+    amt = utils.getActiveObj()
+    parentdic = {}
+
+
+    for node in [x.name for x in itemlist]:
+        b = amt.data.edit_bones[node]
+        cb = amt.data.edit_bones.new('Bone_duplicated')
+
+        cb.head = b.head
+        cb.tail = b.tail
+        cb.matrix = b.matrix
+        #cb.parent = b
+
+
+    # bpy.ops.armature.select_all(action='DESELECT')
+
+    # for node in [x.name for x in itemlist]:
+    #     parent = amt.data.edit_bones[node].parent
+    #     if parent != None:
+    #         parentdic[node] = amt.data.edit_bones[node].parent.name
+    #         #amt.data.edit_bones[node].parent = None
+    #     else:
+    #         parentdic[node] = None
+        
+    #     amt.data.edit_bones[node].select = True
+
+    # bpy.ops.armature.parent_clear(type='CLEAR')
+    # bpy.ops.armature.select_all(action='DESELECT')
+    
+    for node in [x.name for x in itemlist]:
+        bpy.ops.armature.select_all(action='DESELECT')
+        print(node)
+        #amt.data.edit_bones[node].parent = amt.data.edit_bones[parentdic[node]]
+        amt.data.edit_bones[node].select = True
+        # amt.data.edit_bones[parentdic[node]].select = True
+        # amt.data.edit_bones.active = amt.data.edit_bones[parentdic[node]]
+        amt.data.edit_bones['Bone'].select = True
+        amt.data.edit_bones.active = amt.data.edit_bones['Bone']
+
+        #print(node)
+        bpy.ops.armature.parent_set(type='OFFSET')
+        
+        bpy.context.view_layer.update()
+
+
+
+def reorder_():
+    ui_list = bpy.context.window_manager.kiaobjectlist_list
+    itemlist = ui_list.itemlist    
+
+    amt = utils.getActiveObj()
+    parentdic = {}
+
+    bones = []
+    for i,node in enumerate([x.name for x in itemlist]):
+        print(node)
+        #bpy.ops.armature.select_all(action='DESELECT')
+        bones.append(amt.data.edit_bones[node])
+        # amt.data.edit_bones[node].select = True
+        # amt.data.edit_bones.active = amt.data.edit_bones[node]
+        # bpy.context.view_layer.update()
+
+        # print(amt.data.edit_bones.active)
+        # bpy.ops.armature.duplicate()
+    for b in bones:
+        b.select= True
+        amt.data.edit_bones.active = b
+        bpy.ops.armature.duplicate()
+    return
+
+
+    # for node in [x.name for x in itemlist]:
+    #     parent = amt.data.edit_bones[node].parent
+    #     if parent != None:
+    #         parentdic[node] = amt.data.edit_bones[node].parent.name
+    #         amt.data.edit_bones[node].parent = None
+    #     else:
+    #         parentdic[node] = None
+
+
+    bpy.ops.armature.select_all(action='DESELECT')
+
+    for node in [x.name for x in itemlist]:
+        parent = amt.data.edit_bones[node].parent
+        if parent != None:
+            parentdic[node] = amt.data.edit_bones[node].parent.name
+            #amt.data.edit_bones[node].parent = None
+        else:
+            parentdic[node] = None
+        
+        amt.data.edit_bones[node].select = True
+
+    bpy.ops.armature.parent_clear(type='CLEAR')
+
+
+
+    bpy.ops.armature.select_all(action='DESELECT')
+    
+    for node in [x.name for x in itemlist]:
+        bpy.ops.armature.select_all(action='DESELECT')
+        print(node)
+        #amt.data.edit_bones[node].parent = amt.data.edit_bones[parentdic[node]]
+        amt.data.edit_bones[node].select = True
+        amt.data.edit_bones[parentdic[node]].select = True
+        amt.data.edit_bones.active = amt.data.edit_bones[parentdic[node]]
+        #print(node)
+        bpy.ops.armature.parent_set(type='OFFSET')
+        
+        bpy.context.view_layer.update()
