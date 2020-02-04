@@ -166,6 +166,95 @@ def clear():
     itemlist = ui_list.itemlist    
     itemlist.clear()
 
+#---------------------------------------------------------------------------------------
+#ボーンクラスタのリネーム
+#チェックを入れたもののみを対象とする
+#---------------------------------------------------------------------------------------
+
+#子供を取得
+def bone_chain_loop(amt, bone, name, index ):
+    #amt = bpy.context.active_object
+    for b in amt.data.edit_bones:
+        if b.parent == bone:
+            b.name = '%s_%02d' % (name , index )
+            
+            bone_chain_loop(amt, b, name, index + 1 )
+
+def rename_bonecluster():
+    props = bpy.context.scene.kiaobjectlist_props
+    name = props.rename_string
+
+    ui_list = bpy.context.window_manager.kiaobjectlist_list
+    itemlist = ui_list.itemlist    
+
+    amt = utils.getActiveObj()
+    parentdic = {}
+
+    rootarray = []
+    count = 1
+    for node in itemlist:
+        if node.bool_val == True:
+            b = amt.data.edit_bones[node.name]
+            chainname = '%s_%02d' % (name , count )
+            rootname = chainname + '_01'
+            
+            b.name = rootname
+            rootarray.append(b.name)
+            bone_chain_loop(amt , b, chainname, 2 )
+            count += 1
+        else:
+            rootarray.append(node.name)
+
+    bpy.context.view_layer.update()
+
+    clear()
+
+    for name in rootarray:
+        item = itemlist.add()
+        item.name = name
+        #ui_list.active_index = len(itemlist) - 1
+
+
+#チェックを入れたものの並びを反転する。
+#インデックスを保持したままはめんどいので、ソートしたらリストの末尾に追加
+def invert():
+    ui_list = bpy.context.window_manager.kiaobjectlist_list
+    itemlist = ui_list.itemlist    
+
+    array = []
+    indexarray = []
+    for i,node in enumerate(itemlist):
+        if node.bool_val == True:
+            array.append(node.name)
+            indexarray.append(i)
+
+    for index in reversed(indexarray):
+        itemlist.remove(index)
+
+    for bone in reversed(array):
+        item = itemlist.add()
+        item.name = bone
+        item.bool_val = True
+        ui_list.active_index = len(itemlist) - 1
+
+def remove_check_item(op):
+    ui_list = bpy.context.window_manager.kiaobjectlist_list
+    itemlist = ui_list.itemlist    
+
+    #array = []
+    indexarray = []
+    for i,node in enumerate(itemlist):
+        if op == 'checked':
+            if node.bool_val == True:
+            #array.append(node.name)
+                indexarray.append(i)
+        elif op == 'unchecked':
+            if node.bool_val == False:
+                indexarray.append(i)
+
+    for index in reversed(indexarray):
+        itemlist.remove(index)
+
 
 #---------------------------------------------------------------------------------------
 #チェックを入れたオブジェクトに関しての操作
@@ -208,121 +297,133 @@ def check_item(op):
             if node.bool_val == True:
                 utils.showhide(node,True)
 
-BoneCount = 0
+
 #---------------------------------------------------------------------------------------
- #オブジェクトの並び替え
+#ボーンからクロスメッシュを生成
+#揺れジョイント用
 #---------------------------------------------------------------------------------------
-def reorder():
-    global BoneCount
+def bone_chain_loop( bone , chain ,vtxarray ,bonenamearray):
+    amt = bpy.context.active_object
+    for b in amt.data.edit_bones:
+        if b.parent == bone:
+            chain.append(b.name)
+            bonenamearray.append(b.name)
+            vtxarray.append(b.tail)
+            bone_chain_loop(b,chain ,vtxarray,bonenamearray)
+            
+
+#ジョイントのクラスタからメッシュを作成
+#
+def create_mesh_from_bone():
+    props = bpy.context.scene.kiaobjectlist_props
     ui_list = bpy.context.window_manager.kiaobjectlist_list
     itemlist = ui_list.itemlist    
 
-    amt = utils.getActiveObj()
-    parentdic = {}
+    amt = bpy.context.object
+    #selected = bpy.context.selected_bones
+    num_col = 0
+    num_row = len(itemlist)
 
 
-    for node in [x.name for x in itemlist]:
-        b = amt.data.edit_bones[node]
-        cb = amt.data.edit_bones.new('Bone_duplicated')
+    #頂点座標の配列生成
+    #最初のボーンのheadだけの座標を入れれば、残りはtailの座標だけ入れていけばOK
+    vtxarray = []
 
-        cb.head = b.head
-        cb.tail = b.tail
-        cb.matrix = b.matrix
-        #cb.parent = b
+    bonenamearray = []
+    chainarray = []
 
+    utils.mode_e()
+    for node in itemlist:
+        bone = amt.data.edit_bones[node.name]
+        chain = [bone.name]
+        bonenamearray.append(bone.name)
+        vtxarray += [bone.head , bone.tail ]
+        bone_chain_loop( bone , chain ,vtxarray ,bonenamearray)
+        num_col = len(chain)
+        chainarray.append(chain)
 
-    # bpy.ops.armature.select_all(action='DESELECT')
+    polyarray = []
+    ic = num_col + 1 #コラムの増分
 
-    # for node in [x.name for x in itemlist]:
-    #     parent = amt.data.edit_bones[node].parent
-    #     if parent != None:
-    #         parentdic[node] = amt.data.edit_bones[node].parent.name
-    #         #amt.data.edit_bones[node].parent = None
-    #     else:
-    #         parentdic[node] = None
-        
-    #     amt.data.edit_bones[node].select = True
+    #ポリゴンのインデックス生成
+    #円筒状にしたくない場合はrowを１つ減らす
+    if props.cloth_open:
+        row = num_row -1
+    else:
+        row = num_row
 
-    # bpy.ops.armature.parent_clear(type='CLEAR')
-    # bpy.ops.armature.select_all(action='DESELECT')
+    for c in range(row):
+        array = []
+        for r in range(num_col):
+            #シリンダ状にループさせたいので、最後のrowは一番目のrowを指定
+            if c == num_row - 1:
+                array = [
+                    r + ic*c ,
+                    r + 1 + ic*c ,
+                    r + 1  ,
+                    r 
+                    ]
+
+            else:
+                array = [
+                    r + ic*c ,
+                    r + 1 + ic*c ,
+                    r + 1 + ic*(c + 1) ,
+                    r + ic*(c + 1)
+                    ]
+
+            polyarray.append(array)
     
-    for node in [x.name for x in itemlist]:
-        bpy.ops.armature.select_all(action='DESELECT')
-        print(node)
-        #amt.data.edit_bones[node].parent = amt.data.edit_bones[parentdic[node]]
-        amt.data.edit_bones[node].select = True
-        # amt.data.edit_bones[parentdic[node]].select = True
-        # amt.data.edit_bones.active = amt.data.edit_bones[parentdic[node]]
-        amt.data.edit_bones['Bone'].select = True
-        amt.data.edit_bones.active = amt.data.edit_bones['Bone']
-
-        #print(node)
-        bpy.ops.armature.parent_set(type='OFFSET')
-        
-        bpy.context.view_layer.update()
+    #メッシュの生成
+    mesh_data = bpy.data.meshes.new("cube_mesh_data")
+    mesh_data.from_pydata(vtxarray, [], polyarray)
+    mesh_data.update()
 
 
+    obj = bpy.data.objects.new('test', mesh_data)
 
-def reorder_():
-    ui_list = bpy.context.window_manager.kiaobjectlist_list
-    itemlist = ui_list.itemlist    
-
-    amt = utils.getActiveObj()
-    parentdic = {}
-
-    bones = []
-    for i,node in enumerate([x.name for x in itemlist]):
-        print(node)
-        #bpy.ops.armature.select_all(action='DESELECT')
-        bones.append(amt.data.edit_bones[node])
-        # amt.data.edit_bones[node].select = True
-        # amt.data.edit_bones.active = amt.data.edit_bones[node]
-        # bpy.context.view_layer.update()
-
-        # print(amt.data.edit_bones.active)
-        # bpy.ops.armature.duplicate()
-    for b in bones:
-        b.select= True
-        amt.data.edit_bones.active = b
-        bpy.ops.armature.duplicate()
-    return
+    scene = bpy.context.scene
+    utils.sceneLink(obj)
+    utils.select(obj,True)
 
 
-    # for node in [x.name for x in itemlist]:
-    #     parent = amt.data.edit_bones[node].parent
-    #     if parent != None:
-    #         parentdic[node] = amt.data.edit_bones[node].parent.name
-    #         amt.data.edit_bones[node].parent = None
-    #     else:
-    #         parentdic[node] = None
+    #IKターゲットの頂点グループ作成    
+    #ウェイト値の設定
+    for j,chain in enumerate(chainarray):
+        for i,bone in enumerate(chain):
+            obj.vertex_groups.new(name = bone)
+            index = 1 + i + j * (num_col+1)
+
+            vg = obj.vertex_groups[bone]
+            vg.add( [index], 1.0, 'REPLACE' )
 
 
-    bpy.ops.armature.select_all(action='DESELECT')
-
-    for node in [x.name for x in itemlist]:
-        parent = amt.data.edit_bones[node].parent
-        if parent != None:
-            parentdic[node] = amt.data.edit_bones[node].parent.name
-            #amt.data.edit_bones[node].parent = None
-        else:
-            parentdic[node] = None
-        
-        amt.data.edit_bones[node].select = True
-
-    bpy.ops.armature.parent_clear(type='CLEAR')
+    #IKのセットアップ
+    utils.mode_o()
+    utils.act(amt)
+    utils.mode_p()
 
 
+    for j,chain in enumerate(chainarray):
+        for i,bone in enumerate(chain):
 
-    bpy.ops.armature.select_all(action='DESELECT')
-    
-    for node in [x.name for x in itemlist]:
-        bpy.ops.armature.select_all(action='DESELECT')
-        print(node)
-        #amt.data.edit_bones[node].parent = amt.data.edit_bones[parentdic[node]]
-        amt.data.edit_bones[node].select = True
-        amt.data.edit_bones[parentdic[node]].select = True
-        amt.data.edit_bones.active = amt.data.edit_bones[parentdic[node]]
-        #print(node)
-        bpy.ops.armature.parent_set(type='OFFSET')
-        
-        bpy.context.view_layer.update()
+            jnt = amt.pose.bones[bone]
+            c = jnt.constraints.new('IK')
+            c.target = obj
+            c.subtarget = bone
+            c.chain_count = 1
+
+
+    #クロスの設定
+    #ピンの頂点グループを設定する
+    pin = 'pin'
+    obj.vertex_groups.new(name = pin)
+    for c in range(num_row):
+        index =  c * ( num_col + 1 )
+        vg = obj.vertex_groups[pin]
+        vg.add( [index], 1.0, 'REPLACE' )
+
+
+    #bpy.ops.object.modifier_add(type='CLOTH')
+    mod = obj.modifiers.new("cloth", 'CLOTH')
+    mod.settings.vertex_group_mass = "pin"

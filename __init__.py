@@ -81,6 +81,8 @@ def kiaobjectlist_handler(scene):
 
 class KIAOBJECTLIST_Props_OA(PropertyGroup):
     currentindex : IntProperty()
+    rename_string : StringProperty()
+    cloth_open : BoolProperty()
 
 #---------------------------------------------------------------------------------------
 #リスト内のアイテムの見た目を指定
@@ -133,9 +135,64 @@ class KIAOBJECTLIST_PT_ui(utils.panel):
             row.operator("kiaobjectlist.check_item", text = x ).op = x
 
         row = layout.row(align=True)
-        row.label( text = 'check' )
-        row.operator("kiaobjectlist.reorder")
+        row.label( text = 'remove' )
+        for x in ('checked' , 'unchecked'):
+            row.operator("kiaobjectlist.remove_check_item", text = x ).op = x
+
+
+        row = layout.row(align=True)
+        row.operator("kiaobjectlist.invert")
+
+        row = layout.row(align=True)
+        #row.label( text = 'bone' )
+        row.operator("kiaobjectlist.rename")#リネームのウインドウを表示
+        row.operator("kiaobjectlist.bonetool")#リネームのウインドウを表示
         
+        
+
+#---------------------------------------------------------------------------------------
+#リネームツール
+#リネームとオブジェクト選択に関するツール群
+#---------------------------------------------------------------------------------------
+class KIAOBJECTLIST_MT_rename(Operator):
+    bl_idname = "kiaobjectlist.rename"
+    bl_label = "rename tool"
+
+    def execute(self, context):
+        return{'FINISHED'}
+
+    def invoke(self, context, event):
+        return context.window_manager.invoke_props_dialog(self , width = 400 )
+
+    def draw(self, context):
+        props = bpy.context.scene.kiaobjectlist_props
+        layout=self.layout
+        layout.prop(props, "rename_string")
+        layout.operator("kiaobjectlist.rename_bonecluster")
+
+
+#---------------------------------------------------------------------------------------
+#ボーンツール
+#---------------------------------------------------------------------------------------
+class KIAOBJECTLIST_MT_bonetool(Operator):
+    bl_idname = "kiaobjectlist.bonetool"
+    bl_label = "bone tool"
+
+    def execute(self, context):
+        return{'FINISHED'}
+
+    def invoke(self, context, event):
+        return context.window_manager.invoke_props_dialog(self , width = 400 )
+
+    def draw(self, context):
+        props = bpy.context.scene.kiaobjectlist_props
+        layout=self.layout
+        #layout.prop(props, "rename_string")
+        #layout.operator("kiaobjectlist.rename_bonecluster")
+        row = layout.row()
+        row.operator("kiaobjectlist.create_mesh_from_bone")
+        row.prop(props,"cloth_open")
+
         
 
 #---------------------------------------------------------------------------------------
@@ -225,28 +282,57 @@ class KIAOBJECTLIST_OT_check_item(Operator):
     bl_idname = "kiaobjectlist.check_item"
     bl_label = ""
     op : StringProperty()
-
     def execute(self, context):
         cmd.check_item(self.op)
         return {'FINISHED'}
 
-
-#アイテムのオーダーをリストの通りにする。
-class KIAOBJECTLIST_OT_reorder(Operator):
-    """アイテムのクリア"""
-    bl_idname = "kiaobjectlist.reorder"
-    bl_label = "reorder"
+class KIAOBJECTLIST_OT_invert(Operator):
+    """チェックアイテムの並び順反転"""
+    bl_idname = "kiaobjectlist.invert"
+    bl_label = "invert"
     def execute(self, context):
-        cmd.reorder()
+        cmd.invert()
         return {'FINISHED'}
 
+class KIAOBJECTLIST_OT_remove_check_item(Operator):
+    """チェック状態でリストから削除"""
+    bl_idname = "kiaobjectlist.remove_check_item"
+    bl_label = ""
+    op : StringProperty()
+    def execute(self, context):
+        cmd.remove_check_item(self.op)
+        return {'FINISHED'}
+
+
+#アイテムのオーダーをリストの通りにする。
+class KIAOBJECTLIST_OT_rename_bonecluster(Operator):
+    """アイテムのクリア"""
+    bl_idname = "kiaobjectlist.rename_bonecluster"
+    bl_label = "rename bone cluster"
+    def execute(self, context):
+        cmd.rename_bonecluster()
+        return {'FINISHED'}
+
+
+#---------------------------------------------------------------------------------------
+#ボーンツール
+#---------------------------------------------------------------------------------------
+class KIAOBJECTLIST_OT_create_mesh_from_bone(Operator):
+    """選択ボーンからメッシュを作成する。ルートを選択して実行。名前でソートされる。"""
+    bl_idname = "kiaobjectlist.create_mesh_from_bone"
+    bl_label = "create mesh from bone"
+    def execute(self, context):    
+        cmd.create_mesh_from_bone()
+        return {'FINISHED'}        
 
 
 classes = (
     KIAOBJECTLIST_Props_OA,
     KIAOBJECTLIST_UL_uilist,
     KIAOBJECTLIST_PT_ui,
-    KIAOBJECTLIST_Props_list,    
+    KIAOBJECTLIST_Props_list,
+    KIAOBJECTLIST_MT_rename,
+    KIAOBJECTLIST_MT_bonetool,
 
 
     KIAOBJECTLIST_OT_select_all,
@@ -257,8 +343,11 @@ classes = (
     KIAOBJECTLIST_OT_clear,
 
     KIAOBJECTLIST_OT_check_item,
+    KIAOBJECTLIST_OT_invert,
+    KIAOBJECTLIST_OT_remove_check_item,
 
-    KIAOBJECTLIST_OT_reorder
+    KIAOBJECTLIST_OT_rename_bonecluster,
+    KIAOBJECTLIST_OT_create_mesh_from_bone
 
 )
 
