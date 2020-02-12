@@ -45,36 +45,36 @@ def reload():
 #リストのモディファイヤを探しだし、リストでの順位とモディファイヤの順位を比較する
 #その差を出してmove_upで順番を変更する
 #---------------------------------------------------------------------------------------
-def move(type):
-    ui_list = bpy.context.window_manager.kiamodifierlist_list
-    itemlist = ui_list.itemlist
-    index = ui_list.active_index
+# def move(type):
+#     ui_list = bpy.context.window_manager.kiamodifierlist_list
+#     itemlist = ui_list.itemlist
+#     index = ui_list.active_index
 
-    if len(itemlist) < 2:
-        return
+#     if len(itemlist) < 2:
+#         return
 
-    if type == 'UP':
-        v = index -1
-    elif type == 'DOWN':
-        v = index + 1
-    elif type == 'TOP':
-        v = 0
-    elif type == 'BOTTOM':
-        v = len(itemlist) - 1
+#     if type == 'UP':
+#         v = index -1
+#     elif type == 'DOWN':
+#         v = index + 1
+#     elif type == 'TOP':
+#         v = 0
+#     elif type == 'BOTTOM':
+#         v = len(itemlist) - 1
 
 
-    itemlist.move(index, v)
-    ui_list.active_index = v
+#     itemlist.move(index, v)
+#     ui_list.active_index = v
 
-    ob =utils.getActiveObj()
+#     ob =utils.getActiveObj()
 
-    for order_list,listitem in enumerate(itemlist):
-        for order,mod in enumerate(ob.modifiers):
+#     for order_list,listitem in enumerate(itemlist):
+#         for order,mod in enumerate(ob.modifiers):
             
-            if mod.name == listitem.name:
-                if (order_list < order):
-                    for i in range(order - order_list):
-                        bpy.ops.object.modifier_move_up(modifier = mod.name )
+#             if mod.name == listitem.name:
+#                 if (order_list < order):
+#                     for i in range(order - order_list):
+#                         bpy.ops.object.modifier_move_up(modifier = mod.name )
 
 
 
@@ -104,6 +104,12 @@ def add():
             ui_list.active_index = len(itemlist) - 1
 
     elif mode == 'EDIT':
+        for bone in utils.get_selected_bones():
+            item = itemlist.add()
+            item.name = bone.name
+            ui_list.active_index = len(itemlist) - 1
+
+    elif mode == 'POSE':
         for bone in utils.get_selected_bones():
             item = itemlist.add()
             item.name = bone.name
@@ -427,3 +433,108 @@ def create_mesh_from_bone():
     #bpy.ops.object.modifier_add(type='CLOTH')
     mod = obj.modifiers.new("cloth", 'CLOTH')
     mod.settings.vertex_group_mass = "pin"
+
+
+#---------------------------------------------------------------------------------------
+#rename for UE4
+#---------------------------------------------------------------------------------------
+ARM = ('clavicle' , 'upperarm' , 'lowerarm' , 'hand')
+LEG = ('thigh' , 'calf' , 'foot' , 'ball')
+ARM_TWIST = ('upperarm_twist_01','lowerarm_twist_01')
+LEG_TWIST = ('thigh_twist_01','calf_twist_01')
+FINGER = ('thumb' , 'index' ,'middle' , 'ring' , 'pinky' )
+
+def bonechain_ue4_finger_loop( bone , index , name ):
+    props = bpy.context.scene.kiaobjectlist_props
+    amt = bpy.context.active_object
+    for b in amt.data.edit_bones:
+        if b.parent == bone:
+            b.name = '%s_%02d_%s' % ( name , index , props.setupik_lr )
+            bonechain_ue4_finger_loop(b , index + 1 , name)
+
+
+def bonechain_ue4(part):
+    props = bpy.context.scene.kiaobjectlist_props
+    # for b in amt.data.edit_bones:
+    #     if b.parent == bone:
+    #         chain.append(b.name)
+    #         bonenamearray.append(b.name)
+    #         vtxarray.append(b.tail)
+    #         bone_chain_loop(b,chain ,vtxarray,bonenamearray)
+
+    ui_list = bpy.context.window_manager.kiaobjectlist_list
+    itemlist = ui_list.itemlist
+    index = ui_list.active_index
+    
+    amt = bpy.context.active_object
+
+
+    result = []
+    if part == 'clavile_hand':
+        rename_ue4_1(ARM,result)
+        # for new , b in zip( ARM , itemlist ):
+        #     amt.data.edit_bones[b.name].name = '%s_%s' % ( new , props.setupik_lr)
+    if part == 'thigh_toe':
+        rename_ue4_1(LEG,result)
+
+        # for new , b in zip( LEG , itemlist ):
+        #     amt.data.edit_bones[b.name].name = '%s_%s' % ( new , props.setupik_lr)
+
+    elif part == 'arm_twist':
+        rename_ue4_1(ARM_TWIST,result)
+
+        # for new , b in zip( ARM_TWIST , itemlist ):
+        #     amt.data.edit_bones[b.name].name = '%s_%s' % ( new , props.setupik_lr)
+
+    elif part == 'leg_twist':
+        rename_ue4_1(LEG_TWIST,result)
+        
+        # for new , b in zip( LEG_TWIST , itemlist ):
+        #     amt.data.edit_bones[b.name].name = '%s_%s' % ( new , props.setupik_lr)
+
+    elif part == 'pelvis_spine':
+        l = [i.name for i in itemlist]
+        pelvis = l.pop(0)
+        amt.data.edit_bones[pelvis].name = 'pelvis'
+
+        for i , b in enumerate(l):
+            bone = amt.data.edit_bones[b]
+            bone.name = 'spine_%02d' % (i + 1)
+            result.append(bone.name)
+
+    elif part == 'neck_head':
+        l = [i.name for i in itemlist]
+        head = l.pop()
+        amt.data.edit_bones[head].name = 'head'
+
+        for i , b in enumerate(l):
+            amt.data.edit_bones[b].name = 'neck_%02d' % (i + 1)
+
+    #pinky_01_l
+    elif part == 'finger':
+        for newname , b in zip( FINGER , itemlist ):
+            bone = amt.data.edit_bones[b.name]
+            bone.name = '%s_01_%s' % ( newname , props.setupik_lr )
+            bonechain_ue4_finger_loop( bone , 2 , newname )
+
+
+    #reload list
+    clear()
+    for ob in result:
+        item = itemlist.add()
+        item.name = ob
+        ui_list.active_index = len(itemlist) - 1
+
+
+
+
+def rename_ue4_1( namearray ,result):
+    amt = bpy.context.active_object
+    props = bpy.context.scene.kiaobjectlist_props
+    ui_list = bpy.context.window_manager.kiaobjectlist_list
+    itemlist = ui_list.itemlist
+
+    for new , b in zip( namearray , itemlist ):
+        bone = amt.data.edit_bones[b.name]
+        bone.name = '%s_%s' % ( new , props.setupik_lr)
+        result.append(bone.name)

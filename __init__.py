@@ -29,7 +29,8 @@ from bpy.props import(
     IntProperty,
     BoolProperty,
     StringProperty,
-    CollectionProperty
+    CollectionProperty,
+    EnumProperty
     )
 
 from . import utils
@@ -83,6 +84,7 @@ class KIAOBJECTLIST_Props_OA(PropertyGroup):
     currentindex : IntProperty()
     rename_string : StringProperty()
     cloth_open : BoolProperty()
+    setupik_lr : EnumProperty(items= (('l', 'l', 'L'),('r', 'r', 'R')))
 
 #---------------------------------------------------------------------------------------
 #リスト内のアイテムの見た目を指定
@@ -167,8 +169,18 @@ class KIAOBJECTLIST_MT_rename(Operator):
     def draw(self, context):
         props = bpy.context.scene.kiaobjectlist_props
         layout=self.layout
-        layout.prop(props, "rename_string")
-        layout.operator("kiaobjectlist.rename_bonecluster")
+
+        row = layout.row()
+        box = row.box()
+        box.prop(props, "rename_string")
+        box.operator("kiaobjectlist.rename_bonecluster")
+
+        box = row.box()
+        box.label(text = 'for UE4')
+        for p in ('clavile_hand' ,'arm_twist' , 'thigh_toe' ,'leg_twist', 'pelvis_spine' , 'neck_head' , 'finger'):
+            box.operator("kiaobjectlist.rename_bonechain_ue4" , text = p).pt = p
+        box.prop(props, "setupik_lr", expand=True)
+        
 
 
 #---------------------------------------------------------------------------------------
@@ -189,11 +201,11 @@ class KIAOBJECTLIST_MT_bonetool(Operator):
         layout=self.layout
         #layout.prop(props, "rename_string")
         #layout.operator("kiaobjectlist.rename_bonecluster")
+
         row = layout.row()
         row.operator("kiaobjectlist.create_mesh_from_bone")
         row.prop(props,"cloth_open")
 
-        
 
 #---------------------------------------------------------------------------------------
 #リストのアイテムに他の情報を埋め込みたい場合はプロパティを追加できるのでいろいろ追加してみよう。
@@ -304,13 +316,26 @@ class KIAOBJECTLIST_OT_remove_check_item(Operator):
         return {'FINISHED'}
 
 
-#アイテムのオーダーをリストの通りにする。
+#---------------------------------------------------------------------------------------
+#rename tools
+#---------------------------------------------------------------------------------------
 class KIAOBJECTLIST_OT_rename_bonecluster(Operator):
-    """アイテムのクリア"""
+    """First, add some top bones of cluster in objectlist."""
     bl_idname = "kiaobjectlist.rename_bonecluster"
     bl_label = "rename bone cluster"
     def execute(self, context):
         cmd.rename_bonecluster()
+        return {'FINISHED'}
+
+#rename bones chain for UE4
+class KIAOBJECTLIST_OT_rename_bonechain_ue4(Operator):
+    """Arm : Add from clavile to hand in the list\nSpine and pelvis : Add from pelvis to spine\nFinger : Add each finger root bone. Sort from thumb to pinky."""
+    bl_idname = "kiaobjectlist.rename_bonechain_ue4"
+    bl_label = ""
+    pt : StringProperty()
+    
+    def execute(self, context):
+        cmd.bonechain_ue4(self.pt)
         return {'FINISHED'}
 
 
@@ -346,8 +371,12 @@ classes = (
     KIAOBJECTLIST_OT_invert,
     KIAOBJECTLIST_OT_remove_check_item,
 
+    #rename
     KIAOBJECTLIST_OT_rename_bonecluster,
+    KIAOBJECTLIST_OT_rename_bonechain_ue4,
+
     KIAOBJECTLIST_OT_create_mesh_from_bone
+
 
 )
 
