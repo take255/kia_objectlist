@@ -76,6 +76,11 @@ def kiaobjectlist_handler(scene):
                 bpy.ops.armature.select_all(action='DESELECT')
                 utils.bone.selectByName(itemlist[index].name,True)
 
+            if mode == 'POSE':
+                utils.mode_e()
+                bpy.ops.armature.select_all(action='DESELECT')
+                utils.bone.selectByName(itemlist[index].name,True)
+                utils.mode_p()
                 #bpy.ops.object.select_all(action='DESELECT')
                 #utils.selectByName(itemlist[index].name,True)
 
