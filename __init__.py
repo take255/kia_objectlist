@@ -90,6 +90,7 @@ class KIAOBJECTLIST_Props_OA(PropertyGroup):
     rename_string : StringProperty()
     cloth_open : BoolProperty()
     setupik_lr : EnumProperty(items= (('l', 'l', 'L'),('r', 'r', 'R')))
+    finger_step : IntProperty(default = 3 )
 
 #---------------------------------------------------------------------------------------
 #リスト内のアイテムの見た目を指定
@@ -176,9 +177,15 @@ class KIAOBJECTLIST_MT_rename(Operator):
         layout=self.layout
 
         row = layout.row()
-        box = row.box()
+        col = row.column()
+        box = col.box()
         box.prop(props, "rename_string")
         box.operator("kiaobjectlist.rename_bonecluster")
+
+        box = col.box()
+        row0 = box.row()
+        row0.operator("kiaobjectlist.rename_finger")
+        row0.prop(props, "finger_step")
 
         box = row.box()
         box.label(text = 'for UE4')
@@ -325,7 +332,7 @@ class KIAOBJECTLIST_OT_remove_check_item(Operator):
 #rename tools
 #---------------------------------------------------------------------------------------
 class KIAOBJECTLIST_OT_rename_bonecluster(Operator):
-    """First, add some top bones of cluster in objectlist."""
+    """First, add some top bones of cluster into objectlist."""
     bl_idname = "kiaobjectlist.rename_bonecluster"
     bl_label = "rename bone cluster"
     def execute(self, context):
@@ -342,6 +349,15 @@ class KIAOBJECTLIST_OT_rename_bonechain_ue4(Operator):
     def execute(self, context):
         cmd.bonechain_ue4(self.pt)
         return {'FINISHED'}
+
+class KIAOBJECTLIST_OT_rename_finger(Operator):
+    """First, add all finger bone roots from thumb to pinky , and set finger step finger chain number."""
+    bl_idname = "kiaobjectlist.rename_finger"
+    bl_label = "rename finger"
+    def execute(self, context):
+        cmd.rename_finger()
+        return {'FINISHED'}
+
 
 
 #---------------------------------------------------------------------------------------
@@ -380,7 +396,8 @@ classes = (
     KIAOBJECTLIST_OT_rename_bonecluster,
     KIAOBJECTLIST_OT_rename_bonechain_ue4,
 
-    KIAOBJECTLIST_OT_create_mesh_from_bone
+    KIAOBJECTLIST_OT_create_mesh_from_bone,
+    KIAOBJECTLIST_OT_rename_finger
 
 
 )

@@ -179,7 +179,6 @@ def clear():
 
 #子供を取得
 def bone_chain_loop(amt, bone, name, index ):
-    #amt = bpy.context.active_object
     for b in amt.data.edit_bones:
         if b.parent == bone:
             b.name = '%s_%02d' % (name , index )
@@ -308,14 +307,14 @@ def check_item(op):
 #ボーンからクロスメッシュを生成
 #揺れジョイント用
 #---------------------------------------------------------------------------------------
-def bone_chain_loop( bone , chain ,vtxarray ,bonenamearray):
+def bone_clothmesh_loop( bone , chain ,vtxarray ,bonenamearray):
     amt = bpy.context.active_object
     for b in amt.data.edit_bones:
         if b.parent == bone:
             chain.append(b.name)
             bonenamearray.append(b.name)
             vtxarray.append(b.tail)
-            bone_chain_loop(b,chain ,vtxarray,bonenamearray)
+            bone_clothmesh_loop(b,chain ,vtxarray,bonenamearray)
             
 
 #ジョイントのクラスタからメッシュを作成
@@ -344,7 +343,7 @@ def create_mesh_from_bone():
         chain = [bone.name]
         bonenamearray.append(bone.name)
         vtxarray += [bone.head , bone.tail ]
-        bone_chain_loop( bone , chain ,vtxarray ,bonenamearray)
+        bone_clothmesh_loop( bone , chain ,vtxarray ,bonenamearray)
         num_col = len(chain)
         chainarray.append(chain)
 
@@ -452,7 +451,6 @@ def bonechain_ue4_finger_loop( bone , index , name ):
             b.name = '%s_%02d_%s' % ( name , index , props.setupik_lr )
             bonechain_ue4_finger_loop(b , index + 1 , name)
 
-
 def bonechain_ue4(part):
     props = bpy.context.scene.kiaobjectlist_props
     # for b in amt.data.edit_bones:
@@ -526,8 +524,6 @@ def bonechain_ue4(part):
         ui_list.active_index = len(itemlist) - 1
 
 
-
-
 def rename_ue4_1( namearray ,result):
     amt = bpy.context.active_object
     props = bpy.context.scene.kiaobjectlist_props
@@ -538,3 +534,49 @@ def rename_ue4_1( namearray ,result):
         bone = amt.data.edit_bones[b.name]
         bone.name = '%s_%s' % ( new , props.setupik_lr)
         result.append(bone.name)
+
+
+
+#Bone rename tool
+def bonechain_finger_loop( bone , index , name ):
+    props = bpy.context.scene.kiaobjectlist_props
+    amt = bpy.context.active_object
+    for b in amt.data.edit_bones:
+        if b.parent == bone:
+            b.name = '%s_%02d_%s' % ( name , index , props.setupik_lr )
+            bonechain_finger_loop(b , index + 1 , name)
+
+
+def rename_finger():
+    props = bpy.context.scene.kiaobjectlist_props
+    #name = props.rename_string
+
+    ui_list = bpy.context.window_manager.kiaobjectlist_list
+    itemlist = ui_list.itemlist    
+
+    amt = utils.getActiveObj()
+    parentdic = {}
+
+    rootarray = []
+    #count = 1
+    for i,node in enumerate(itemlist):
+        if node.bool_val == True:            
+            b = amt.data.edit_bones[node.name]
+            #chainname = '%s_%02d' % (FINGER[i] , count )
+            #chainname = FINGER[i]
+            rootname = FINGER[i] + '_01_' + props.setupik_lr
+            
+            b.name = rootname
+            rootarray.append(b.name)
+            bonechain_finger_loop( b, 2, FINGER[i] )
+            #count += 1
+        else:
+            rootarray.append(node.name)
+
+    bpy.context.view_layer.update()
+
+    clear()
+
+    for name in rootarray:
+        item = itemlist.add()
+        item.name = name    
