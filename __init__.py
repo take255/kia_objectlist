@@ -181,6 +181,7 @@ class KIAOBJECTLIST_MT_rename(Operator):
         box = col.box()
         box.prop(props, "rename_string")
         box.operator("kiaobjectlist.rename_bonecluster")
+        box.operator("kiaobjectlist.rename_add_sequential_number" , icon = 'LINENUMBERS_ON')
 
         box = col.box()
         row0 = box.row()
@@ -358,6 +359,13 @@ class KIAOBJECTLIST_OT_rename_finger(Operator):
         cmd.rename_finger()
         return {'FINISHED'}
 
+class KIAOBJECTLIST_OT_rename_add_sequential_renumber(Operator):
+    """Rename some bones in list to add number."""
+    bl_idname = "kiaobjectlist.rename_add_sequential_number"
+    bl_label = ""
+    def execute(self, context):
+        cmd.rename_add_sequential_number()
+        return {'FINISHED'}
 
 
 #---------------------------------------------------------------------------------------
@@ -397,7 +405,8 @@ classes = (
     KIAOBJECTLIST_OT_rename_bonechain_ue4,
 
     KIAOBJECTLIST_OT_create_mesh_from_bone,
-    KIAOBJECTLIST_OT_rename_finger
+    KIAOBJECTLIST_OT_rename_finger,
+    KIAOBJECTLIST_OT_rename_add_sequential_renumber
 
 
 )
