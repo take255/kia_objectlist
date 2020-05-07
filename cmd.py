@@ -601,6 +601,7 @@ def rename_ue4_1( namearray ,result):
 #---------------------------------------------------------------------------------------
 #Bone rename tool
 #---------------------------------------------------------------------------------------
+<<<<<<< HEAD
 def rename_replace(mode):
     props = bpy.context.scene.kiaobjectlist_props
 
@@ -669,6 +670,8 @@ def rename_add_word(mode):
         item.name = ob
         ui_list.active_index = len(itemlist) - 1
 
+=======
+>>>>>>> a352f373a37c145bdca7cdfee2a9d2e15d400fcc
 
 def bonechain_finger_loop( bone , index , name ):
     props = bpy.context.scene.kiaobjectlist_props
@@ -724,19 +727,26 @@ def rename_add_sequential_number():
     itemlist = ui_list.itemlist    
     name = props.rename_string
 
+<<<<<<< HEAD
     # suffix = props.suffix
     # if suffix == 'none':
     #     suffix = ''
     # else:
     #     suffix = '_' + suffix
 
+=======
+>>>>>>> a352f373a37c145bdca7cdfee2a9d2e15d400fcc
     amt = utils.getActiveObj()
     
     bonearray = []
     for i,node in enumerate(itemlist):
         if node.bool_val == True:            
             b = amt.data.edit_bones[node.name]
+<<<<<<< HEAD
             new = '%s_%02d%s' % (name , i+1 , get_suffix() )
+=======
+            new = '%s_%02d' % (name , i+1 )
+>>>>>>> a352f373a37c145bdca7cdfee2a9d2e15d400fcc
             b.name = new
             bonearray.append(new)
 

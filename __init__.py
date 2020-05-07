@@ -201,6 +201,7 @@ class KIAOBJECTLIST_MT_rename(Operator):
         box1.prop(props, "suffix")
 
         box.operator("kiaobjectlist.rename_bonecluster")
+        box.operator("kiaobjectlist.rename_add_sequential_number" , icon = 'LINENUMBERS_ON')
 
 
         box = col.box()
@@ -465,9 +466,13 @@ classes = (
 
     KIAOBJECTLIST_OT_create_mesh_from_bone,
     KIAOBJECTLIST_OT_rename_finger,
+<<<<<<< HEAD
     KIAOBJECTLIST_OT_rename_add_sequential_renumber,
 
     KIAOBJECTLIST_OT_rename_add_word,
+=======
+    KIAOBJECTLIST_OT_rename_add_sequential_renumber
+>>>>>>> a352f373a37c145bdca7cdfee2a9d2e15d400fcc
 
     #bone 
     KIAOBJECTLIST_OT_parent_chain
