@@ -70,7 +70,9 @@ def kiaobjectlist_handler(scene):
             mode = utils.current_mode()
             if mode == 'OBJECT':
                 bpy.ops.object.select_all(action='DESELECT')
-                utils.selectByName(itemlist[index].name,True)
+                #utils.selectByName(itemlist[index].name,True)
+                ob = utils.objectByName(itemlist[index].name)
+                utils.act(ob)
 
             if mode == 'EDIT':
                 bpy.ops.armature.select_all(action='DESELECT')
@@ -88,9 +90,13 @@ def kiaobjectlist_handler(scene):
 class KIAOBJECTLIST_Props_OA(PropertyGroup):
     currentindex : IntProperty()
     rename_string : StringProperty()
+    replace_string : StringProperty()
     cloth_open : BoolProperty()
     setupik_lr : EnumProperty(items= (('l', 'l', 'L'),('r', 'r', 'R')))
     finger_step : IntProperty(default = 3 )
+    chain_step : IntProperty(default = 0 )
+
+    suffix : EnumProperty(items= (('none', 'none', 'none'),('l', 'l', 'L'),('r', 'r', 'R'),('c', 'c', 'C')) )
 
 #---------------------------------------------------------------------------------------
 #リスト内のアイテムの見た目を指定
@@ -179,12 +185,29 @@ class KIAOBJECTLIST_MT_rename(Operator):
         row = layout.row()
         col = row.column()
         box = col.box()
-        box.prop(props, "rename_string")
+        box.prop(props, "rename_string" , text = 'word')
+        box.prop(props, "replace_string", text = 'replace')
+
+        row1 = box.row()
+        row1.operator("kiaobjectlist.rename_add_sequential_number" , icon = 'LINENUMBERS_ON')
+        row1.operator("kiaobjectlist.rename_add_word" , text = 'add suffix').mode = 'suffix'
+
+        for mode in ( 'replace' , 'l>r' , 'r>l' , 'del.number'):            
+            row1.operator("kiaobjectlist.rename_replace" , text = mode ).mode = mode
+
+
+
+        box1 = box.box()
+        box1.prop(props, "suffix")
+
         box.operator("kiaobjectlist.rename_bonecluster")
 
+
         box = col.box()
+        box.label(text = 'reneme finger')
         row0 = box.row()
-        row0.operator("kiaobjectlist.rename_finger")
+        row0.operator("kiaobjectlist.rename_finger" , text = 'hand').mode = 0
+        row0.operator("kiaobjectlist.rename_finger" , text = 'foot').mode = 1
         row0.prop(props, "finger_step")
 
         box = row.box()
@@ -215,8 +238,15 @@ class KIAOBJECTLIST_MT_bonetool(Operator):
         #layout.operator("kiaobjectlist.rename_bonecluster")
 
         row = layout.row()
-        row.operator("kiaobjectlist.create_mesh_from_bone")
-        row.prop(props,"cloth_open")
+        box = row.box()
+        box.label(text = 'Cloth')
+        box.operator("kiaobjectlist.create_mesh_from_bone")
+        box.prop(props,"cloth_open")
+
+        box = row.box()
+        box.label(text = 'parent')
+        box.operator("kiaobjectlist.parent_chain")
+        box.prop(props, "chain_step")
 
 
 #---------------------------------------------------------------------------------------
@@ -339,9 +369,28 @@ class KIAOBJECTLIST_OT_rename_bonecluster(Operator):
         cmd.rename_bonecluster()
         return {'FINISHED'}
 
+class KIAOBJECTLIST_OT_rename_replace(Operator):
+    """First, add some top bones of cluster into objectlist."""
+    bl_idname = "kiaobjectlist.rename_replace"
+    bl_label = "replace"
+    mode : StringProperty()
+    def execute(self, context):
+        cmd.rename_replace(self.mode)
+        return {'FINISHED'}
+
+class KIAOBJECTLIST_OT_rename_add_word(Operator):
+    """First, add some top bones of cluster into objectlist."""
+    bl_idname = "kiaobjectlist.rename_add_word"
+    bl_label = ""
+    mode : StringProperty()
+    def execute(self, context):
+        cmd.rename_add_word(self.mode)
+        return {'FINISHED'}
+
+
 #rename bones chain for UE4
 class KIAOBJECTLIST_OT_rename_bonechain_ue4(Operator):
-    """Arm : Add from clavile to hand in the list\nSpine and pelvis : Add from pelvis to spine\nFinger : Add each finger root bone. Sort from thumb to pinky."""
+    """Arm : Add 4bones from clavile to hand in the list\nLeg : Add 4bones from thigh to toe in the list\nSpine and pelvis : Add from pelvis to spine\nFinger : Add each finger root bone. Sort from thumb to pinky."""
     bl_idname = "kiaobjectlist.rename_bonechain_ue4"
     bl_label = ""
     pt : StringProperty()
@@ -353,11 +402,19 @@ class KIAOBJECTLIST_OT_rename_bonechain_ue4(Operator):
 class KIAOBJECTLIST_OT_rename_finger(Operator):
     """First, add all finger bone roots from thumb to pinky , and set finger step finger chain number."""
     bl_idname = "kiaobjectlist.rename_finger"
-    bl_label = "rename finger"
+    bl_label = ""
+    mode : IntProperty()
     def execute(self, context):
-        cmd.rename_finger()
+        cmd.rename_finger(self.mode)
         return {'FINISHED'}
 
+class KIAOBJECTLIST_OT_rename_add_sequential_renumber(Operator):
+    """Rename some bones in list to add number."""
+    bl_idname = "kiaobjectlist.rename_add_sequential_number"
+    bl_label = ""
+    def execute(self, context):
+        cmd.rename_add_sequential_number()
+        return {'FINISHED'}
 
 
 #---------------------------------------------------------------------------------------
@@ -370,6 +427,15 @@ class KIAOBJECTLIST_OT_create_mesh_from_bone(Operator):
     def execute(self, context):    
         cmd.create_mesh_from_bone()
         return {'FINISHED'}        
+
+class KIAOBJECTLIST_OT_parent_chain(Operator):
+    """Allow you to make a bone chain. First, add bones into list ordering from  end to root, and execute this command."""
+    bl_idname = "kiaobjectlist.parent_chain"
+    bl_label = "parent chain"
+    def execute(self, context):    
+        cmd.parent_chain()
+        return {'FINISHED'}        
+
 
 
 classes = (
@@ -395,10 +461,16 @@ classes = (
     #rename
     KIAOBJECTLIST_OT_rename_bonecluster,
     KIAOBJECTLIST_OT_rename_bonechain_ue4,
+    KIAOBJECTLIST_OT_rename_replace,
 
     KIAOBJECTLIST_OT_create_mesh_from_bone,
-    KIAOBJECTLIST_OT_rename_finger
+    KIAOBJECTLIST_OT_rename_finger,
+    KIAOBJECTLIST_OT_rename_add_sequential_renumber,
 
+    KIAOBJECTLIST_OT_rename_add_word,
+
+    #bone 
+    KIAOBJECTLIST_OT_parent_chain
 
 )
 

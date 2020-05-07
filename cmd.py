@@ -38,8 +38,26 @@ def reload():
         item.bool_val = mod.show_viewport
         ui_list.active_index = len(itemlist) - 1
 
+def get_suffix():
+    props = bpy.context.scene.kiaobjectlist_props
+    suffix = props.suffix
+    if suffix == 'none':
+        suffix = ''
+    else:
+        suffix = '_' + suffix    
 
+    return suffix
 
+def update_rename( result ):
+    ui_list = bpy.context.window_manager.kiaobjectlist_list
+    itemlist = ui_list.itemlist    
+
+    clear()
+    for ob in result:
+        item = itemlist.add()
+        item.name = ob
+        item.bool_val = True
+        ui_list.active_index = len(itemlist) - 1    
 
 #---------------------------------------------------------------------------------------
 #リストのモディファイヤを探しだし、リストでの順位とモディファイヤの順位を比較する
@@ -181,7 +199,7 @@ def clear():
 def bone_chain_loop(amt, bone, name, index ):
     for b in amt.data.edit_bones:
         if b.parent == bone:
-            b.name = '%s_%02d' % (name , index )
+            b.name = '%s_%02d%s' % (name , index , get_suffix() )
             
             bone_chain_loop(amt, b, name, index + 1 )
 
@@ -201,8 +219,8 @@ def rename_bonecluster():
         if node.bool_val == True:
             b = amt.data.edit_bones[node.name]
             chainname = '%s_%02d' % (name , count )
-            rootname = chainname + '_01'
-            
+            rootname = '%s_01%s' % (chainname  , get_suffix())
+             
             b.name = rootname
             rootarray.append(b.name)
             bone_chain_loop(amt , b, chainname, 2 )
@@ -213,7 +231,6 @@ def rename_bonecluster():
     bpy.context.view_layer.update()
 
     clear()
-
     for name in rootarray:
         item = itemlist.add()
         item.name = name
@@ -293,6 +310,10 @@ def check_item(op):
 
                 if utils.current_mode() == 'EDIT':
                     utils.bone.selectByName(node.name,True)
+
+                if utils.current_mode() == 'POSE':
+                    utils.bone.selectByName(node.name,True)
+
 
         elif op == 'show':
             if node.bool_val == True:
@@ -434,6 +455,47 @@ def create_mesh_from_bone():
     mod.settings.vertex_group_mass = "pin"
 
 
+def parent_chain():
+    props = bpy.context.scene.kiaobjectlist_props
+
+    ui_list = bpy.context.window_manager.kiaobjectlist_list
+    itemlist = ui_list.itemlist    
+
+    amt = utils.getActiveObj()
+
+
+    num = props.chain_step
+
+    if num == 0:
+        num = len(itemlist)    
+        step = 1 
+    else:
+        #num = props.chain_step
+        step = int(len(itemlist) / num)
+
+    print('step>>',step)
+    utils.mode_e()
+    for s in range(step):
+
+        for i in range(num-1):
+            index0 = s * num + i
+            index1 = s * num + i + 1
+
+            bone = amt.data.edit_bones[itemlist[ index1 ].name]
+            child = amt.data.edit_bones[itemlist[ index0 ].name]
+            bone.tail = child.head
+
+
+            bone = amt.data.edit_bones[itemlist[ index0 ].name]
+            parent = amt.data.edit_bones[itemlist[ index1 ].name]
+            bone.parent = parent   
+            bone.use_connect = True
+
+        #Modify bone tail position.
+        #for i in range(num-1):
+
+
+
 #---------------------------------------------------------------------------------------
 #rename for UE4
 #---------------------------------------------------------------------------------------
@@ -536,8 +598,78 @@ def rename_ue4_1( namearray ,result):
         result.append(bone.name)
 
 
-
+#---------------------------------------------------------------------------------------
 #Bone rename tool
+#---------------------------------------------------------------------------------------
+def rename_replace(mode):
+    props = bpy.context.scene.kiaobjectlist_props
+
+    ui_list = bpy.context.window_manager.kiaobjectlist_list
+    itemlist = ui_list.itemlist    
+
+    amt = utils.getActiveObj()
+    utils.mode_e()
+
+    word = props.rename_string
+    replace_word = props.replace_string
+
+    result = []
+    for node in itemlist:
+        if node.bool_val == True:            
+            b = amt.data.edit_bones[node.name]
+
+            if mode == 'replace':
+                new = b.name.replace( word , replace_word ) 
+
+            elif mode == 'l>r':
+                new = b.name.replace( '_l' , '_r' ) 
+
+            elif mode == 'r>l':
+                new = b.name.replace( '_r' , '_l' ) 
+
+            elif mode == 'del.number':
+                new = b.name.split('.')[0]
+
+            b.name = new
+            result.append(b.name)
+
+    update_rename(result)
+    # clear()
+
+    # for ob in result:
+    #     item = itemlist.add()
+    #     item.name = ob
+    #     item.bool_val = True
+    #     ui_list.active_index = len(itemlist) - 1
+
+
+def rename_add_word(mode):
+    props = bpy.context.scene.kiaobjectlist_props
+
+    ui_list = bpy.context.window_manager.kiaobjectlist_list
+    itemlist = ui_list.itemlist    
+
+    amt = utils.getActiveObj()
+    utils.mode_e()
+
+    word = props.rename_string
+    #replace_word = props.replace_string
+
+    result = []
+    for node in itemlist:
+        if node.bool_val == True:            
+            b = amt.data.edit_bones[node.name]
+            b.name = b.name + word
+            result.append(b.name)
+
+    clear()
+
+    for ob in result:
+        item = itemlist.add()
+        item.name = ob
+        ui_list.active_index = len(itemlist) - 1
+
+
 def bonechain_finger_loop( bone , index , name ):
     props = bpy.context.scene.kiaobjectlist_props
     amt = bpy.context.active_object
@@ -547,7 +679,8 @@ def bonechain_finger_loop( bone , index , name ):
             bonechain_finger_loop(b , index + 1 , name)
 
 
-def rename_finger():
+def rename_finger(mode):
+    prefix = ['' , 'toe']
     props = bpy.context.scene.kiaobjectlist_props
     #name = props.rename_string
 
@@ -559,17 +692,21 @@ def rename_finger():
 
     rootarray = []
     #count = 1
-    for i,node in enumerate(itemlist):
+
+    utils.mode_e()
+    count = 0
+    for node in itemlist:
         if node.bool_val == True:            
+            name = prefix[mode] + FINGER[ count ]
             b = amt.data.edit_bones[node.name]
             #chainname = '%s_%02d' % (FINGER[i] , count )
             #chainname = FINGER[i]
-            rootname = FINGER[i] + '_01_' + props.setupik_lr
+            rootname = name + '_01_' + props.setupik_lr
             
             b.name = rootname
             rootarray.append(b.name)
-            bonechain_finger_loop( b, 2, FINGER[i] )
-            #count += 1
+            bonechain_finger_loop( b, 2, name )
+            count += 1
         else:
             rootarray.append(node.name)
 
@@ -579,4 +716,34 @@ def rename_finger():
 
     for name in rootarray:
         item = itemlist.add()
-        item.name = name    
+        item.name = name
+
+def rename_add_sequential_number():
+    props = bpy.context.scene.kiaobjectlist_props
+    ui_list = bpy.context.window_manager.kiaobjectlist_list
+    itemlist = ui_list.itemlist    
+    name = props.rename_string
+
+    # suffix = props.suffix
+    # if suffix == 'none':
+    #     suffix = ''
+    # else:
+    #     suffix = '_' + suffix
+
+    amt = utils.getActiveObj()
+    
+    bonearray = []
+    for i,node in enumerate(itemlist):
+        if node.bool_val == True:            
+            b = amt.data.edit_bones[node.name]
+            new = '%s_%02d%s' % (name , i+1 , get_suffix() )
+            b.name = new
+            bonearray.append(new)
+
+    clear()
+
+    for n in bonearray:
+        item = itemlist.add()
+        item.name = n
+
+
