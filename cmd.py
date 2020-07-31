@@ -215,6 +215,8 @@ def rename_bonecluster():
 
     rootarray = []
     count = 1
+    utils.mode_e()
+    
     for node in itemlist:
         if node.bool_val == True:
             b = amt.data.edit_bones[node.name]
@@ -528,34 +530,26 @@ def bonechain_ue4(part):
     
     amt = bpy.context.active_object
 
-
     result = []
+    utils.mode_e()
     if part == 'clavile_hand':
         rename_ue4_1(ARM,result)
-        # for new , b in zip( ARM , itemlist ):
-        #     amt.data.edit_bones[b.name].name = '%s_%s' % ( new , props.setupik_lr)
+
     if part == 'thigh_toe':
         rename_ue4_1(LEG,result)
-
-        # for new , b in zip( LEG , itemlist ):
-        #     amt.data.edit_bones[b.name].name = '%s_%s' % ( new , props.setupik_lr)
 
     elif part == 'arm_twist':
         rename_ue4_1(ARM_TWIST,result)
 
-        # for new , b in zip( ARM_TWIST , itemlist ):
-        #     amt.data.edit_bones[b.name].name = '%s_%s' % ( new , props.setupik_lr)
-
     elif part == 'leg_twist':
         rename_ue4_1(LEG_TWIST,result)
         
-        # for new , b in zip( LEG_TWIST , itemlist ):
-        #     amt.data.edit_bones[b.name].name = '%s_%s' % ( new , props.setupik_lr)
-
     elif part == 'pelvis_spine':
         l = [i.name for i in itemlist]
-        pelvis = l.pop(0)
-        amt.data.edit_bones[pelvis].name = 'pelvis'
+        pelvisname = l.pop(0)
+        pelvis = amt.data.edit_bones[pelvisname]
+        pelvis.name = 'pelvis'
+        result.append( pelvis.name )
 
         for i , b in enumerate(l):
             bone = amt.data.edit_bones[b]
@@ -564,11 +558,16 @@ def bonechain_ue4(part):
 
     elif part == 'neck_head':
         l = [i.name for i in itemlist]
-        head = l.pop()
-        amt.data.edit_bones[head].name = 'head'
+        headname = l.pop()
+        head = amt.data.edit_bones[headname]
+        head.name = 'head'
+        result.append( head.name )
 
         for i , b in enumerate(l):
-            amt.data.edit_bones[b].name = 'neck_%02d' % (i + 1)
+            bone = amt.data.edit_bones[b]
+            bone.name = 'neck_%02d' % (i + 1)
+            result.append(bone.name)
+
 
     #pinky_01_l
     elif part == 'finger':
@@ -601,7 +600,7 @@ def rename_ue4_1( namearray ,result):
 #---------------------------------------------------------------------------------------
 #Bone rename tool
 #---------------------------------------------------------------------------------------
-<<<<<<< HEAD
+
 def rename_replace(mode):
     props = bpy.context.scene.kiaobjectlist_props
 
@@ -644,7 +643,7 @@ def rename_replace(mode):
     #     ui_list.active_index = len(itemlist) - 1
 
 
-def rename_add_word(mode):
+def rename_add_word( mode ):
     props = bpy.context.scene.kiaobjectlist_props
 
     ui_list = bpy.context.window_manager.kiaobjectlist_list
@@ -653,14 +652,18 @@ def rename_add_word(mode):
     amt = utils.getActiveObj()
     utils.mode_e()
 
-    word = props.rename_string
+    if mode == 'suffix':
+        word = props.rename_string
+    elif mode == 'suffix_list':
+        word = props.suffix
+
     #replace_word = props.replace_string
 
     result = []
     for node in itemlist:
         if node.bool_val == True:            
             b = amt.data.edit_bones[node.name]
-            b.name = b.name + word
+            b.name = '%s_%s' % ( b.name , word )
             result.append(b.name)
 
     clear()
@@ -670,8 +673,6 @@ def rename_add_word(mode):
         item.name = ob
         ui_list.active_index = len(itemlist) - 1
 
-=======
->>>>>>> a352f373a37c145bdca7cdfee2a9d2e15d400fcc
 
 def bonechain_finger_loop( bone , index , name ):
     props = bpy.context.scene.kiaobjectlist_props
@@ -685,7 +686,6 @@ def bonechain_finger_loop( bone , index , name ):
 def rename_finger(mode):
     prefix = ['' , 'toe']
     props = bpy.context.scene.kiaobjectlist_props
-    #name = props.rename_string
 
     ui_list = bpy.context.window_manager.kiaobjectlist_list
     itemlist = ui_list.itemlist    
@@ -694,7 +694,6 @@ def rename_finger(mode):
     parentdic = {}
 
     rootarray = []
-    #count = 1
 
     utils.mode_e()
     count = 0
@@ -702,8 +701,6 @@ def rename_finger(mode):
         if node.bool_val == True:            
             name = prefix[mode] + FINGER[ count ]
             b = amt.data.edit_bones[node.name]
-            #chainname = '%s_%02d' % (FINGER[i] , count )
-            #chainname = FINGER[i]
             rootname = name + '_01_' + props.setupik_lr
             
             b.name = rootname
@@ -727,26 +724,21 @@ def rename_add_sequential_number():
     itemlist = ui_list.itemlist    
     name = props.rename_string
 
-<<<<<<< HEAD
     # suffix = props.suffix
     # if suffix == 'none':
     #     suffix = ''
     # else:
     #     suffix = '_' + suffix
 
-=======
->>>>>>> a352f373a37c145bdca7cdfee2a9d2e15d400fcc
     amt = utils.getActiveObj()
     
     bonearray = []
+    utils.mode_e()
     for i,node in enumerate(itemlist):
         if node.bool_val == True:            
             b = amt.data.edit_bones[node.name]
-<<<<<<< HEAD
             new = '%s_%02d%s' % (name , i+1 , get_suffix() )
-=======
             new = '%s_%02d' % (name , i+1 )
->>>>>>> a352f373a37c145bdca7cdfee2a9d2e15d400fcc
             b.name = new
             bonearray.append(new)
 
